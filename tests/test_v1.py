@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
-import pandas as pd
+import math
 
+import pandas as pd
+import pytest
+
+from nba_shot_quality.config import LEAKAGE_COLUMNS, MODEL_FEATURE_COLUMNS
 from nba_shot_quality.data import clean_shot_logs, game_level_train_test_split
 from nba_shot_quality.evaluate import evaluate_predictions, select_best_model
-from nba_shot_quality.features import get_feature_matrix, get_target
+from nba_shot_quality.features import (
+    assert_no_feature_leakage,
+    get_feature_matrix,
+    get_target,
+)
 
 
 def _sample_frame() -> pd.DataFrame:
@@ -43,7 +51,7 @@ def test_clean_clips_touch_time_and_flags_shot_clock() -> None:
     assert cleaned["shot_clock_missing"].sum() == 2
     assert "game_clock_seconds" in cleaned.columns
     assert set(cleaned["is_home"].unique()).issubset({0, 1})
-    assert set(cleaned["is_three"].unique()).issubset({0, 1})
+    assert "is_three" not in cleaned.columns
 
 
 def test_feature_matrix_shape() -> None:
@@ -72,3 +80,23 @@ def test_metrics_and_selection() -> None:
         }
     )
     assert best == "b"
+
+
+def test_clean_rejects_non_binary_fgm() -> None:
+    """Floats like 0.7 must raise, not truncate to 0 via astype(int)."""
+    frame = _sample_frame()
+    frame["FGM"] = frame["FGM"].astype(float)
+    frame.loc[0, "FGM"] = 0.7
+    with pytest.raises(ValueError, match="binary"):
+        clean_shot_logs(frame)
+
+
+def test_evaluate_single_class_roc_auc_is_nan() -> None:
+    metrics = evaluate_predictions([0, 0, 0], [0.1, 0.2, 0.3])
+    assert math.isnan(metrics["roc_auc"])
+    assert metrics["log_loss"] > 0
+
+
+def test_no_feature_leakage() -> None:
+    assert_no_feature_leakage()
+    assert not (set(MODEL_FEATURE_COLUMNS) & set(LEAKAGE_COLUMNS))

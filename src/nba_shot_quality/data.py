@@ -54,7 +54,7 @@ def clean_shot_logs(df: pd.DataFrame) -> pd.DataFrame:
     - Clip negative TOUCH_TIME to 0
     - Flag missing SHOT_CLOCK (do not drop)
     - Parse GAME_CLOCK to seconds
-    - Derive is_home / is_three
+    - Derive is_home
     - Drop rows missing the target
     """
     out = df.copy()
@@ -64,11 +64,13 @@ def clean_shot_logs(df: pd.DataFrame) -> pd.DataFrame:
         if col in out.columns:
             out[col] = pd.to_numeric(out[col], errors="coerce")
 
-    # Target must be present and binary
+    # Target must be present and binary. Validate before astype(int) so
+    # non-binary floats (e.g. 0.7) raise instead of silently truncating.
     out = out.dropna(subset=[TARGET_COLUMN])
+    if not out[TARGET_COLUMN].isin([0, 1]).all():
+        bad = sorted(out.loc[~out[TARGET_COLUMN].isin([0, 1]), TARGET_COLUMN].unique().tolist())
+        raise ValueError(f"FGM must be binary 0/1; found non-binary values: {bad}")
     out[TARGET_COLUMN] = out[TARGET_COLUMN].astype(int)
-    if not set(out[TARGET_COLUMN].unique()).issubset({0, 1}):
-        raise ValueError("FGM must be binary 0/1 after cleaning")
 
     # Known data quality issue: negative touch times (sensor noise)
     out["TOUCH_TIME"] = out["TOUCH_TIME"].clip(lower=0)
@@ -78,7 +80,6 @@ def clean_shot_logs(df: pd.DataFrame) -> pd.DataFrame:
 
     out["game_clock_seconds"] = out["GAME_CLOCK"].map(_parse_game_clock_seconds)
     out["is_home"] = (out["LOCATION"].astype(str).str.upper() == "H").astype(int)
-    out["is_three"] = (out["PTS_TYPE"] == 3).astype(int)
 
     return out.reset_index(drop=True)
 

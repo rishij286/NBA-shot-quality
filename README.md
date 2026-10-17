@@ -14,7 +14,7 @@ V1 uses the 2014–15 SportVU shot logs (partial season through early March).
 
 **Target:** `FGM` (1 = made, 0 = missed)
 
-**Model features:** `SHOT_DIST`, `CLOSE_DEF_DIST`, `SHOT_CLOCK`, `TOUCH_TIME`, `DRIBBLES`, `PERIOD`, `PTS_TYPE`, plus `is_home`, `game_clock_seconds`, and `is_three`.
+**Model features:** `SHOT_DIST`, `CLOSE_DEF_DIST`, `SHOT_CLOCK`, `TOUCH_TIME`, `DRIBBLES`, `PERIOD`, `PTS_TYPE`, plus `is_home`, `game_clock_seconds`, and `shot_clock_missing`.
 
 Player/team identifiers are kept for later analysis but are not used as model inputs in V1.
 
@@ -24,6 +24,14 @@ Player/team identifiers are kept for later analysis but are not used as model in
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+```
+
+## Test
+
+From the project root:
+
+```bash
+PYTHONPATH=src pytest
 ```
 
 ## Train

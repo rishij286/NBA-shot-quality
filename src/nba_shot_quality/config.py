@@ -52,7 +52,8 @@ NUMERIC_COLUMNS = [
     "player_id",
 ]
 
-# Pre-shot features used by the model (after feature engineering)
+# Pre-shot features used by the model (after feature engineering).
+# Three-point shots are represented by PTS_TYPE (2 or 3), not a separate flag.
 MODEL_FEATURE_COLUMNS = [
     "SHOT_DIST",
     "CLOSE_DEF_DIST",
@@ -63,7 +64,6 @@ MODEL_FEATURE_COLUMNS = [
     "PTS_TYPE",
     "is_home",
     "game_clock_seconds",
-    "is_three",
     "shot_clock_missing",
 ]
 
